@@ -201,6 +201,24 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
               } else if (data.type === 'enrollment_intent') {
                 // Handle enrollment intent for lead conversion
                 console.log('🎯 UltraModernChat: Enrollment intent detected:', data.intent);
+                
+                // If we have streaming content that hasn't been finalized, finalize it now
+                if (isStreaming && streamingContentRef.current) {
+                  console.log('🎯 UltraModernChat: Finalizing streaming content due to enrollment_intent');
+                  const finalMessage: Message = {
+                    id: `ai-${Date.now()}`,
+                    conversation_id: conversationId,
+                    sender_type: 'ai',
+                    content: streamingContentRef.current,
+                    created_at: new Date().toISOString(),
+                    confidence_score: 0.8
+                  };
+                  setMessages(prev => [...prev, finalMessage]);
+                  setIsStreaming(false);
+                  setStreamingContent('');
+                  streamingContentRef.current = '';
+                }
+                
                 if (data.intent?.should_show_enrollment_form) {
                   console.log('🎯 UltraModernChat: Calling onEnrollmentIntent with:', data.intent);
                   if (onEnrollmentIntent) {
@@ -215,16 +233,10 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
                 // Capture fullContent value to avoid eslint no-loop-func warning
                 const finalContent = fullContent;
                 
-                console.log('🔄 Complete event - clearing streaming state');
-                console.log('🔄 isStreaming before:', isStreaming);
-                console.log('🔄 streamingContent before:', streamingContent);
-                
                 // Clear streaming state and add final message
                 setIsStreaming(false);
                 setStreamingContent('');
                 streamingContentRef.current = '';
-                
-                console.log('🔄 Adding final message with content length:', finalContent.length);
                 
                 // Add final AI message
                 const aiMessage: Message = {
@@ -253,20 +265,38 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error('Streaming error:', error);
-        setIsStreaming(false);
-        setStreamingContent('');
         
-        const errorMessage: Message = {
-          id: `error-${Date.now()}`,
-          conversation_id: conversationId,
-          sender_type: 'ai',
-          content: 'Sorry, I encountered an error. Please try again.',
-          created_at: new Date().toISOString(),
-          is_error: true
-        };
-        
-        setMessages(prev => [...prev, errorMessage]);
-        toast.error('Failed to get response');
+        // If we have streaming content but no complete event, finalize it immediately
+        if (streamingContentRef.current) {
+          console.log('Stream ended with content but no complete event - finalizing message');
+          const finalMessage: Message = {
+            id: `ai-${Date.now()}`,
+            conversation_id: conversationId,
+            sender_type: 'ai',
+            content: streamingContentRef.current,
+            created_at: new Date().toISOString(),
+            confidence_score: 0.8
+          };
+          setMessages(prev => [...prev, finalMessage]);
+          setIsStreaming(false);
+          setStreamingContent('');
+          streamingContentRef.current = '';
+        } else {
+          // Show error message only if no content was received
+          const errorMessage: Message = {
+            id: `error-${Date.now()}`,
+            conversation_id: conversationId,
+            sender_type: 'ai',
+            content: 'Sorry, I encountered an error. Please try again.',
+            created_at: new Date().toISOString(),
+            is_error: true
+          };
+          setMessages(prev => [...prev, errorMessage]);
+          toast.error('Failed to get response');
+          setIsStreaming(false);
+          setStreamingContent('');
+          streamingContentRef.current = '';
+        }
       }
     }
   }, [isPublic]);
@@ -657,10 +687,7 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
             {messageComponents}
             
             {/* Streaming message */}
-            {(() => {
-              console.log('🎨 Render check - isStreaming:', isStreaming, 'streamingContent length:', streamingContent.length);
-              return isStreaming && streamingContent;
-            })() && (
+            {isStreaming && streamingContent && (
               <div className="flex gap-4 animate-fadeIn">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <Bot className="w-5 h-5 text-white" />
