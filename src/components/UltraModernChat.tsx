@@ -32,6 +32,7 @@ interface UltraModernChatProps {
   isPublic?: boolean;
   userId?: string;
   isAgentMode?: boolean; // New prop to disable helpers and escalation for agent use
+  showEnrollmentForm?: boolean; // New prop to track if enrollment form is visible
 }
 
 export const UltraModernChat: React.FC<UltraModernChatProps> = ({
@@ -43,7 +44,8 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
   showHeader = true,
   isPublic = false,
   userId,
-  isAgentMode = false
+  isAgentMode = false,
+  showEnrollmentForm = false
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -233,33 +235,57 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
                   console.log('🎯 UltraModernChat: Not calling handler - should_show_enrollment_form is false');
                 }
               } else if (data.type === 'complete') {
-                // Don't finalize message here - wait for potential enrollment_intent
-                // Just clear streaming display but keep the content for enrollment_intent
-                setIsStreaming(false);
-                setStreamingContent('');
+                const finalContent = data.full_content || fullContent || streamingContentRef.current;
                 
-                // Store the complete content for potential enrollment_intent use
-                fullContent = data.full_content || fullContent || streamingContentRef.current;
-                
-                // Capture fullContent value to avoid eslint no-loop-func warning
-                const capturedContent = fullContent;
-                
-                // Fallback: if no enrollment_intent comes within 2 seconds, finalize the message
-                setTimeout(() => {
-                  // Only add message if no enrollment_intent has already added it
-                  if (capturedContent && !messageAddedRef.current) {
-                    const fallbackMessage: Message = {
-                      id: `ai-${Date.now()}`,
-                      conversation_id: conversationId,
-                      sender_type: 'ai',
-                      content: capturedContent,
-                      created_at: new Date().toISOString(),
-                      confidence_score: 0.8
-                    };
-                    setMessages(prev => [...prev, fallbackMessage]);
-                    messageAddedRef.current = true;
-                  }
-                }, 2000);
+                if (isPublic) {
+                  // Public mode: Don't finalize message here - wait for potential enrollment_intent
+                  // Keep streaming indicator active until enrollment_intent arrives
+                  // setIsStreaming(false); // Don't clear this yet - keep loader showing
+                  setStreamingContent(''); // Clear the content but keep the loader
+                  
+                  // Store the complete content for potential enrollment_intent use
+                  fullContent = finalContent;
+                  
+                  // Capture fullContent value to avoid eslint no-loop-func warning
+                  const capturedContent = finalContent;
+                  
+                  // Fallback: if no enrollment_intent comes within 2 seconds, finalize the message
+                  setTimeout(() => {
+                    // Only add message if no enrollment_intent has already added it
+                    if (capturedContent && !messageAddedRef.current) {
+                      const fallbackMessage: Message = {
+                        id: `ai-${Date.now()}`,
+                        conversation_id: conversationId,
+                        sender_type: 'ai',
+                        content: capturedContent,
+                        created_at: new Date().toISOString(),
+                        confidence_score: 0.8
+                      };
+                      setMessages(prev => [...prev, fallbackMessage]);
+                      messageAddedRef.current = true;
+                      // Clear streaming state in fallback case
+                      setIsStreaming(false);
+                    }
+                  }, 2000);
+                } else {
+                  // Student/authenticated mode: Finalize message immediately
+                  setIsStreaming(false);
+                  setStreamingContent('');
+                  streamingContentRef.current = '';
+                  
+                  const aiMessage: Message = {
+                    id: `ai-${Date.now()}`,
+                    conversation_id: conversationId,
+                    sender_type: 'ai',
+                    content: finalContent,
+                    created_at: new Date().toISOString(),
+                    confidence_score: data.response?.confidence_score || data.confidence_score,
+                    sources: data.response?.sources || data.sources
+                  };
+                  
+                  setMessages(prev => [...prev, aiMessage]);
+                  messageAddedRef.current = true;
+                }
                 
                 // Don't return here - continue reading for enrollment intent
                 // return;

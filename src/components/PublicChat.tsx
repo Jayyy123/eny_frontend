@@ -123,6 +123,7 @@ export const PublicChat: React.FC<PublicChatProps> = ({ onLeadCreated }) => {
         isPublic={true}
         placeholder="Ask me about our programs, enrollment, or anything else..."
         className="flex-1"
+        showEnrollmentForm={showLeadForm}
       />
 
       {/* Lead Form Modal */}
@@ -233,8 +234,8 @@ export const PublicChat: React.FC<PublicChatProps> = ({ onLeadCreated }) => {
         </div>
       )}
 
-      {/* Signup Form Modal */}
-      {showSignupForm && (
+      {/* Signup Form Modal - Hide when enrollment form is showing */}
+      {/* {showSignupForm && !showLeadForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-scaleIn">
             <div className="p-6">
@@ -315,7 +316,7 @@ export const PublicChat: React.FC<PublicChatProps> = ({ onLeadCreated }) => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
