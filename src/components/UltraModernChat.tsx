@@ -64,6 +64,7 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortController = useRef<AbortController | null>(null);
   const lastScrollTop = useRef(0);
+  const streamingContentRef = useRef('');
 
   // Enhanced scroll to bottom with user scroll detection
   const scrollToBottom = useCallback((force = false) => {
@@ -193,7 +194,8 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
               
               if (data.type === 'content') {
                 // Always use the incremental content for streaming display to avoid showing full message at once
-                setStreamingContent(prev => prev + data.content);
+                streamingContentRef.current += data.content;
+                setStreamingContent(streamingContentRef.current);
                 // Track the full content separately for the final message
                 fullContent = data.full_content || fullContent + data.content;
               } else if (data.type === 'enrollment_intent') {
@@ -212,6 +214,7 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
               } else if (data.type === 'complete') {
                 setIsStreaming(false);
                 setStreamingContent('');
+                streamingContentRef.current = '';
                 
                 // Add final AI message
                 const aiMessage: Message = {
@@ -354,6 +357,7 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
     // Immediately show thinking indicator
     setIsStreaming(true);
     setStreamingContent('');
+    streamingContentRef.current = '';
 
     // Handle conversation creation inline with first message
     let activeConversationId = currentConversationId;
@@ -439,6 +443,7 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
     // Immediately show thinking indicator
     setIsStreaming(true);
     setStreamingContent('');
+    streamingContentRef.current = '';
 
     // Handle conversation creation inline with first message
     let activeConversationId = currentConversationId;
