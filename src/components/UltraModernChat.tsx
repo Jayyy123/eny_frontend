@@ -212,32 +212,32 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
                   console.log('🎯 UltraModernChat: Not calling handler - should_show_enrollment_form is false');
                 }
               } else if (data.type === 'complete') {
+                // Capture fullContent value to avoid eslint no-loop-func warning
+                const finalContent = fullContent;
+                
+                console.log('🔄 Complete event - clearing streaming state');
+                console.log('🔄 isStreaming before:', isStreaming);
+                console.log('🔄 streamingContent before:', streamingContent);
+                
+                // Clear streaming state and add final message
                 setIsStreaming(false);
                 setStreamingContent('');
                 streamingContentRef.current = '';
+                
+                console.log('🔄 Adding final message with content length:', finalContent.length);
                 
                 // Add final AI message
                 const aiMessage: Message = {
                   id: `ai-${Date.now()}`,
                   conversation_id: conversationId,
                   sender_type: 'ai',
-                  content: fullContent,
+                  content: finalContent,
                   created_at: new Date().toISOString(),
                   confidence_score: data.response?.confidence_score || data.confidence_score,
                   sources: data.response?.sources || data.sources
                 };
                 
                 setMessages(prev => [...prev, aiMessage]);
-                
-                // Handle enrollment intent from complete response
-                if (data.enrollment_intent?.should_show_enrollment_form) {
-                  console.log('🎯 UltraModernChat: Complete event enrollment intent:', data.enrollment_intent);
-                  if (onEnrollmentIntent) {
-                    onEnrollmentIntent(data.enrollment_intent);
-                  } else {
-                    console.log('🎯 UltraModernChat: ERROR - onEnrollmentIntent not defined for complete event!');
-                  }
-                }
                 
                 // Don't return here - continue reading for enrollment intent
                 // return;
@@ -657,7 +657,10 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
             {messageComponents}
             
             {/* Streaming message */}
-            {isStreaming && streamingContent && (
+            {(() => {
+              console.log('🎨 Render check - isStreaming:', isStreaming, 'streamingContent length:', streamingContent.length);
+              return isStreaming && streamingContent;
+            })() && (
               <div className="flex gap-4 animate-fadeIn">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <Bot className="w-5 h-5 text-white" />
