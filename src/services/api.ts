@@ -508,7 +508,7 @@ class ApiService {
   // Public message rating (no auth required)
   async rateMessagePublic(messageId: string, rating: 'positive' | 'negative', feedback?: string): Promise<any> {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || '/api/v1'}/chat/messages/${messageId}/rating`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || '/api/v1'}/public/messages/${messageId}/rating`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
