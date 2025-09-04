@@ -192,8 +192,10 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
               console.log('Stream data:', data);
               
               if (data.type === 'content') {
+                // Always use the incremental content for streaming display to avoid showing full message at once
+                setStreamingContent(prev => prev + data.content);
+                // Track the full content separately for the final message
                 fullContent = data.full_content || fullContent + data.content;
-                setStreamingContent(fullContent);
               } else if (data.type === 'enrollment_intent') {
                 // Handle enrollment intent for lead conversion
                 console.log('🎯 UltraModernChat: Enrollment intent detected:', data.intent);
@@ -234,7 +236,8 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
                   }
                 }
                 
-                return;
+                // Don't return here - continue reading for enrollment intent
+                // return;
               } else if (data.type === 'error') {
                 throw new Error(data.error);
               }
