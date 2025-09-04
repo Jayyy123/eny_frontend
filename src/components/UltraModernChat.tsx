@@ -573,9 +573,10 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
         onCopy={handleCopyMessage}
         onRate={handleRating}
         isLast={index === messages.length - 1}
+        isPublic={isPublic}
       />
     ));
-  }, [messages, handleCopyMessage, handleRating]);
+  }, [messages, handleCopyMessage, handleRating, isPublic]);
 
   return (
     <div className={`flex flex-col h-full bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 ${className}`}>
@@ -832,9 +833,10 @@ interface MessageBubbleProps {
   onCopy: (content: string) => void;
   onRate: (messageId: string, rating: 'positive' | 'negative') => void;
   isLast: boolean;
+  isPublic?: boolean;
 }
 
-const MessageBubbleComponent: React.FC<MessageBubbleProps> = React.memo(({ message, onCopy, onRate, isLast }) => {
+const MessageBubbleComponent: React.FC<MessageBubbleProps> = React.memo(({ message, onCopy, onRate, isLast, isPublic = false }) => {
   const [copied, setCopied] = useState(false);
   const [isRating, setIsRating] = useState(false);
   const [hasRated, setHasRated] = useState(!!message.user_rating);
@@ -911,8 +913,8 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = React.memo(({ messa
             </div>
           )}
           
-          {/* Message actions for bot messages - Hide rating for agent messages */}
-          {!isUser && message.sender_type !== 'agent' && (
+          {/* Message actions for bot messages - Hide rating for agent messages and public users */}
+          {!isUser && message.sender_type !== 'agent' && !isPublic && (
             <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
                 onClick={handleCopy}
