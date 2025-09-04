@@ -696,8 +696,8 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
           <>
             {messageComponents}
             
-            {/* Streaming message */}
-            {isStreaming && streamingContent && (
+            {/* Streaming message - Don't show in public mode, wait for final message */}
+            {isStreaming && streamingContent && !isPublic && (
               <div className="flex gap-4 animate-fadeIn">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <Bot className="w-5 h-5 text-white" />
