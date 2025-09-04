@@ -205,11 +205,13 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
                 // If we have streaming content that hasn't been finalized, finalize it now
                 if (isStreaming && streamingContentRef.current) {
                   console.log('🎯 UltraModernChat: Finalizing streaming content due to enrollment_intent');
+                  // Use the best available content source
+                  const finalContent = fullContent || streamingContentRef.current;
                   const finalMessage: Message = {
                     id: `ai-${Date.now()}`,
                     conversation_id: conversationId,
                     sender_type: 'ai',
-                    content: streamingContentRef.current,
+                    content: finalContent,
                     created_at: new Date().toISOString(),
                     confidence_score: 0.8
                   };
@@ -230,8 +232,8 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
                   console.log('🎯 UltraModernChat: Not calling handler - should_show_enrollment_form is false');
                 }
               } else if (data.type === 'complete') {
-                // Capture fullContent value to avoid eslint no-loop-func warning
-                const finalContent = fullContent;
+                // Use full_content from complete event if available, otherwise use streamed content
+                const finalContent = data.full_content || fullContent || streamingContentRef.current;
                 
                 // Clear streaming state and add final message
                 setIsStreaming(false);
@@ -269,11 +271,13 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
         // If we have streaming content but no complete event, finalize it immediately
         if (streamingContentRef.current) {
           console.log('Stream ended with content but no complete event - finalizing message');
+          // Use the best available content source
+          const finalContent = fullContent || streamingContentRef.current;
           const finalMessage: Message = {
             id: `ai-${Date.now()}`,
             conversation_id: conversationId,
             sender_type: 'ai',
-            content: streamingContentRef.current,
+            content: finalContent,
             created_at: new Date().toISOString(),
             confidence_score: 0.8
           };
