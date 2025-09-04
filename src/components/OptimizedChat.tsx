@@ -67,7 +67,8 @@ export const OptimizedChat: React.FC<OptimizedChatProps> = ({
     startTimeRef.current = Date.now();
     
     try {
-      const endpoint = isPublic ? '/api/v1/streaming/public/chat/fast' : '/api/v1/streaming/chat/fast';
+      const baseUrl = process.env.REACT_APP_STREAMING_URL || '/api/v1/streaming';
+      const endpoint = isPublic ? `${baseUrl}/public/chat/fast` : `${baseUrl}/chat/fast`;
       
       const response = await apiService.post<ChatResponse>(endpoint, {
         content,
@@ -146,9 +147,10 @@ export const OptimizedChat: React.FC<OptimizedChatProps> = ({
       setMessages(prev => [...prev, userMessage]);
 
       // Setup streaming
+      const baseUrl = process.env.REACT_APP_STREAMING_URL || '/api/v1/streaming';
       const endpoint = isPublic 
-        ? `/api/v1/streaming/public/chat/stream`
-        : `/api/v1/streaming/chat/stream`;
+        ? `${baseUrl}/public/chat/stream`
+        : `${baseUrl}/chat/stream`;
 
       const eventSource = new EventSource(endpoint);
       eventSourceRef.current = eventSource;

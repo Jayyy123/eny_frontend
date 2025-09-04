@@ -145,9 +145,10 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
     abortController.current = new AbortController();
     
     try {
+      const baseUrl = process.env.REACT_APP_STREAMING_URL || '/api/v1/streaming';
       const endpoint = isPublic 
-        ? '/api/v1/streaming/public/chat/stream'
-        : '/api/v1/streaming/chat/stream';
+        ? `${baseUrl}/public/chat/stream`
+        : `${baseUrl}/chat/stream`;
       
       console.log('Starting stream to:', endpoint, { content, conversationId });
         
