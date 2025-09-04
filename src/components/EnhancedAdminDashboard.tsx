@@ -109,7 +109,7 @@ export const EnhancedAdminDashboard: React.FC = () => {
     try {
       setRefreshing(true);
       const response = await apiService.get<ComprehensiveAnalytics>(
-        `/api/v1/admin/analytics/comprehensive?start_date=${dateRange.start}&end_date=${dateRange.end}`
+        `${process.env.REACT_APP_API_URL || '/api/v1'}/admin/analytics/comprehensive?start_date=${dateRange.start}&end_date=${dateRange.end}`
       );
       setAnalytics(response);
       setError(null);
@@ -138,7 +138,7 @@ export const EnhancedAdminDashboard: React.FC = () => {
 
   const clearCache = async (cacheType?: string) => {
     try {
-      await apiService.post(`/api/v1/admin/cache/clear${cacheType ? `?cache_type=${cacheType}` : ''}`);
+      await apiService.post(`${process.env.REACT_APP_API_URL || '/api/v1'}/admin/cache/clear${cacheType ? `?cache_type=${cacheType}` : ''}`);
       toast.success(`Cache cleared: ${cacheType || 'all'}`);
       loadAnalytics(true);
     } catch (error) {

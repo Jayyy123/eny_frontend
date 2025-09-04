@@ -434,7 +434,7 @@ class ApiService {
   // Streaming chat endpoint
   async sendStreamingMessage(data: ChatMessage): Promise<ReadableStream<Uint8Array>> {
     const token = localStorage.getItem('access_token');
-    const response = await fetch('/api/v1/chat/messages/stream', {
+    const response = await fetch(`${process.env.REACT_APP_STREAMING_URL || '/api/v1/streaming'}/chat/messages/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
