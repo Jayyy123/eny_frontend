@@ -518,12 +518,17 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
   // Handle message rating
   const handleRating = useCallback(async (messageId: string, rating: 'positive' | 'negative') => {
     try {
-      await apiService.rateMessage(messageId, rating);
+      if (isPublic) {
+        await apiService.rateMessagePublic(messageId, rating);
+      } else {
+        await apiService.rateMessage(messageId, rating);
+      }
       toast.success('Thank you for your feedback!');
     } catch (error) {
+      console.error('Rating error:', error);
       toast.error('Failed to submit rating');
     }
-  }, []);
+  }, [isPublic]);
 
   // Handle conversation escalation
   const handleEscalateConversation = useCallback(async () => {

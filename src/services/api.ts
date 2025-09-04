@@ -505,6 +505,31 @@ class ApiService {
     }
   }
 
+  // Public message rating (no auth required)
+  async rateMessagePublic(messageId: string, rating: 'positive' | 'negative', feedback?: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseURL}/chat/messages/${messageId}/rating`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rating,
+          feedback: feedback || ''
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error rating message (public):', error);
+      throw error;
+    }
+  }
+
   // Utility methods
   setAuthToken(token: string): void {
     localStorage.setItem('access_token', token);

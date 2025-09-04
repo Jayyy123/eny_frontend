@@ -232,12 +232,17 @@ export const ModernStreamingChat: React.FC<ModernStreamingChatProps> = ({
 
   const handleRateMessage = useCallback(async (messageId: string, rating: 'positive' | 'negative') => {
     try {
-      // TODO: Implement rating API
-      toast.success(`Message rated as ${rating}`);
+      if (isPublic) {
+        await apiService.rateMessagePublic(messageId, rating);
+      } else {
+        await apiService.rateMessage(messageId, rating);
+      }
+      toast.success('Thank you for your feedback!');
     } catch (error) {
+      console.error('Rating error:', error);
       toast.error('Failed to rate message');
     }
-  }, []);
+  }, [isPublic]);
 
   const handleQuickAction = useCallback((text: string) => {
     setInputMessage(text);
