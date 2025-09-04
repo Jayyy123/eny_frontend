@@ -65,6 +65,7 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
   const abortController = useRef<AbortController | null>(null);
   const lastScrollTop = useRef(0);
   const streamingContentRef = useRef('');
+  const messageAddedRef = useRef(false);
 
   // Enhanced scroll to bottom with user scroll detection
   const scrollToBottom = useCallback((force = false) => {
@@ -178,6 +179,7 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
       const decoder = new TextDecoder();
       let fullContent = '';
       setIsStreaming(true);
+      messageAddedRef.current = false; // Reset for new message
 
       while (true) {
         const { done, value } = await reader.read();
@@ -202,24 +204,23 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
                 // Handle enrollment intent for lead conversion
                 console.log('🎯 UltraModernChat: Enrollment intent detected:', data.intent);
                 
-                // If we have streaming content that hasn't been finalized, finalize it now
-                if (isStreaming && streamingContentRef.current) {
-                  console.log('🎯 UltraModernChat: Finalizing streaming content due to enrollment_intent');
-                  // Use the best available content source
-                  const finalContent = fullContent || streamingContentRef.current;
-                  const finalMessage: Message = {
-                    id: `ai-${Date.now()}`,
-                    conversation_id: conversationId,
-                    sender_type: 'ai',
-                    content: finalContent,
-                    created_at: new Date().toISOString(),
-                    confidence_score: 0.8
-                  };
-                  setMessages(prev => [...prev, finalMessage]);
-                  setIsStreaming(false);
-                  setStreamingContent('');
-                  streamingContentRef.current = '';
-                }
+                // Always finalize the message when enrollment_intent arrives (this is the final, complete message)
+                const finalContent = fullContent || streamingContentRef.current;
+                const finalMessage: Message = {
+                  id: `ai-${Date.now()}`,
+                  conversation_id: conversationId,
+                  sender_type: 'ai',
+                  content: finalContent,
+                  created_at: new Date().toISOString(),
+                  confidence_score: 0.9
+                };
+                setMessages(prev => [...prev, finalMessage]);
+                messageAddedRef.current = true; // Mark that message has been added
+                
+                // Clear all streaming state
+                setIsStreaming(false);
+                setStreamingContent('');
+                streamingContentRef.current = '';
                 
                 if (data.intent?.should_show_enrollment_form) {
                   console.log('🎯 UltraModernChat: Calling onEnrollmentIntent with:', data.intent);
@@ -232,26 +233,33 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
                   console.log('🎯 UltraModernChat: Not calling handler - should_show_enrollment_form is false');
                 }
               } else if (data.type === 'complete') {
-                // Use full_content from complete event if available, otherwise use streamed content
-                const finalContent = data.full_content || fullContent || streamingContentRef.current;
-                
-                // Clear streaming state and add final message
+                // Don't finalize message here - wait for potential enrollment_intent
+                // Just clear streaming display but keep the content for enrollment_intent
                 setIsStreaming(false);
                 setStreamingContent('');
-                streamingContentRef.current = '';
                 
-                // Add final AI message
-                const aiMessage: Message = {
-                  id: `ai-${Date.now()}`,
-                  conversation_id: conversationId,
-                  sender_type: 'ai',
-                  content: finalContent,
-                  created_at: new Date().toISOString(),
-                  confidence_score: data.response?.confidence_score || data.confidence_score,
-                  sources: data.response?.sources || data.sources
-                };
+                // Store the complete content for potential enrollment_intent use
+                fullContent = data.full_content || fullContent || streamingContentRef.current;
                 
-                setMessages(prev => [...prev, aiMessage]);
+                // Capture fullContent value to avoid eslint no-loop-func warning
+                const capturedContent = fullContent;
+                
+                // Fallback: if no enrollment_intent comes within 2 seconds, finalize the message
+                setTimeout(() => {
+                  // Only add message if no enrollment_intent has already added it
+                  if (capturedContent && !messageAddedRef.current) {
+                    const fallbackMessage: Message = {
+                      id: `ai-${Date.now()}`,
+                      conversation_id: conversationId,
+                      sender_type: 'ai',
+                      content: capturedContent,
+                      created_at: new Date().toISOString(),
+                      confidence_score: 0.8
+                    };
+                    setMessages(prev => [...prev, fallbackMessage]);
+                    messageAddedRef.current = true;
+                  }
+                }, 2000);
                 
                 // Don't return here - continue reading for enrollment intent
                 // return;
@@ -271,13 +279,11 @@ export const UltraModernChat: React.FC<UltraModernChatProps> = ({
         // If we have streaming content but no complete event, finalize it immediately
         if (streamingContentRef.current) {
           console.log('Stream ended with content but no complete event - finalizing message');
-          // Use the best available content source
-          const finalContent = fullContent || streamingContentRef.current;
           const finalMessage: Message = {
             id: `ai-${Date.now()}`,
             conversation_id: conversationId,
             sender_type: 'ai',
-            content: finalContent,
+            content: streamingContentRef.current,
             created_at: new Date().toISOString(),
             confidence_score: 0.8
           };
